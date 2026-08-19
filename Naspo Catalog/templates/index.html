@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+    <form>
+        <div class="flex flex-wrap gap-3 items-end">
+            <label class="form-control flex-1 min-w-64">
+                <div class="label"><span class="label-text">Part number or keyword</span>
+                </div>
+                <input type="text" name="q" value="{{ q }}"
+                       placeholder="e.g. SCOUT_AWS_002 or firewall"
+                       class="input input-bordered w-full">
+            </label>
+
+            <label class="form-control w-72">
+                <div class="label"><span
+                        class="label-text">Vendor (optional)</span></div>
+                <input type="text" name="vendor" value="{{ vendor }}"
+                       list="vendor-list"
+                       placeholder="start typing a vendor name"
+                       class="input input-bordered w-full">
+                <datalist id="vendor-list">
+                    {% for name in vendor_names %}
+                        <option value="{{ name }}">{% endfor %}
+                </datalist>
+            </label>
+
+            <button class="btn btn-primary" type="submit">Search</button>
+            <a href="{% url 'search' %}" class="btn btn-ghost">Reset</a>
+        </div>
+    </form>
+
+    {% if searched %}
+        <div class="mb-3 text-sm opacity-70">
+          {{ page.paginator.count|intcomma }} result{{ page.paginator.count|pluralize }}
+        </div>
+
+        {% if page.object_list %}
+            <div class="overflow-x-auto card bg-base-100 shadow">
+                <table class="table table-zebra table-sm">
+                  <thead>
+                    <tr>
+                      <th>Vendor</th>
+                      <th>Part number</th>
+                      <th>Description</th>
+                      <th class="text-right">List price</th>
+                      <th class="text-right">NASPO price</th>
+                    </tr>
+                  </thead>
+                <tbody>
+                    {% for item in page.object_list %}
+                         <tr>
+                            <td class="whitespace-nowrap">{{ item.vendor.name }}</td>
+                            <td class="font-mono">
+                              {{ item.mpn }}
+                              {% if item.duplicate_vendor_mpn %}
+                                <span class="badge badge-warning badge-sm ml-1">dup</span>
+                              {% endif %}
+                            </td>
+                            <td>{{ item.description }}</td>
+                            <td class="text-right font-mono whitespace-nowrap">
+                              {% if item.list_price is not None %}
+                                ${{ item.list_price|floatformat:2|intcomma }}
+                              {% else %}
+                                  -
+                              {% endif %}
+                            </td>
+                            <td class="text-right font-mono whitespace-nowrap">
+                              {% if item.naspo_price is not None %}
+                                ${{ item.naspo_price|floatformat:2|intcomma }}
+                              {% else %}
+                                  -
+                              {% endif %}
+                            </td>
+                         </tr>
+                    {% endfor %}
+                </tbody>
+             </table>
+            </div>
+
+            <div class="join mt-4">
+                {% if page.has_previous %}
+                    <a class="join-item btn" href="?q={{ q|urlencode }}&vendor={{ vendor|urlencode }}&page={{ page.previous_page_number }}">«</a>
+                {% endif %}
+                    <span class="join-item btn btn-disabled">
+                        Page {{ page.number }} / {{ page.paginator.num_pages }}
+                    </span>
+                {% if page.has_next %}
+                  <a class="join-item btn"
+                     href="?q={{ q|urlencode }}&vendor={{ vendor|urlencode }}&page={{ page.next_page_number }}">»</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% endif %}
+{% endblock %}
